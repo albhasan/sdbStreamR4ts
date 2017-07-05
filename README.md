@@ -1,2 +1,41 @@
-# sdbStreamR4ts
-R scripts for processing time series using SciDB's stream
+sdbStreamR4ts
+================
+Alber Sánchez
+
+sdbStreamR4ts
+-------------
+
+sdbStreamR4ts is a set of R scripts for processing time series using SciDB's stream.
+
+[SciDB](https://en.wikipedia.org/wiki/SciDB) is an distributed multidimensional array database meant to process large scientific dataset.
+
+[SciDB stream](https://github.com/Paradigm4/stream/) is a plug-in which implements a SciDB's operator for the AFL language. In a nutshell, stream enables each instance of SciDB to call an arbitrary program (R, Python, Java, C, sh) in parallel. Then, SciDB stores the results of the program for each instance in a single array. Each SciDB instance is responsible for calling the program, passing any parameters and data (one chunk at the time) and finally to collect the response. This map-reduce approach allows SciDB to take advantage of any of the available data-processing libraries and it does not depend on SHIM
+
+Spatio-temporal data in SciDB
+-----------------------------
+
+SciDB can store large spatio-temporal arrays built from satellite images such as MODIS and LANDSAT. For example, the following is an schema to store MOD13Q1 data:
+
+`iquery -aq "show(MOD13Q1)" # {i} schema # {0} 'MOD13Q1 <ndvi:int16, evi:int16, quality:uint16, red:int16, nir:int16, blue:int16, mir:int16, view_zenith:int16, sun_zenith:int16, relative_azimuth:int16, day_of_year:int16, reliability:int8> [col_id=48000:62400:0:40; row_id=38400:48000:0:40; time_id=0:511:0:512]'`
+
+This shcema has three dimensions:
+
+-   col\_id. The global identifier of a pixel's colum
+-   row\_id. The global identifier of a pixel's row
+-   time\_id. The global identifier of a pixel's time.
+
+A chunk in this schema is made of 40x40x510 pixels. Note how the *time\_id*'s chunk size is 512, in other words, it is more than enough to hold whole time series. The MODIS mission started at February 2000 and MOD13Q1 is made of 23 a year. This means a chunk in this schema contains 40x40 time series.
+
+Time-series processing using SciDB stream
+-----------------------------------------
+
+SciDB stream calls an arbitrary program --- in our case, an R script --- and it passes a chunk of data. Following our example schema, SciDB stream passes 40x40 time-series to an R script. We call this script the `main.R` script.
+
+SciDB stream calls `main.R` one time for each chunk. The `main.R` scripts takes two parameters:
+
+-   script\_folder. A path to a folder available to all the instances of SciDB
+-   script\_name. A name of a R script
+
+1.  
+
+The `main.R` script splits the chunk into time series --- 1600 time-series in our example --- and
