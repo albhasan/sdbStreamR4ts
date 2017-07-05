@@ -4,7 +4,7 @@
 # NOTES: 
 #
 # example 
-# Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=dtwSatAnalisys.R
+# Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=analyzeTS.R
 #
 # example SciDB stream query:
 # iquery -aq "
@@ -20,7 +20,7 @@
 #       ), 
 #      <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]
 #     ), 
-#     'Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=dtwSatAnalisys.R', 
+#     'Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=analyzeTS.R', 
 #    'format=df', 'types=int32,int32,string'
 #  ),
 #  query201706051451-5586
