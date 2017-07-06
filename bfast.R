@@ -1,78 +1,15 @@
-################################################################################
-# BFAST
-# bfast.R
-################################################################################
-#------------------------------------------------------------
-# preliminars
-#------------------------------------------------------------
-# tunnel to esensing2
-# ssh -L 8080:150.163.2.206:8080 ssh.dpi.inpe.br
+#-------------------------------------------------------------------------------
+# load a chunk # iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62400, 43200, 367), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/rs_test07.R', 'format=df', 'types=int32,int32,string')"
+# load("data/input.df-38447140")
+# load("data/input.df-27271652")
+#-------------------------------------------------------------------------------
 
-library(scidb)
-library(sp)
-library(ggplot2)
-
-source("/home/alber/Documents/ghProjects/scidbutil/scidbUtil.R")
-setwd("/home/alber/Documents/Dropbox/alberLocal/inpe/projects/sdb_bfast")
-
-#------------------------------------------------------------
-# paramaters
-#------------------------------------------------------------
-veg_index <- "ndvi"
-veg_index <- "evi"
-latitude <- -14.919100049
-longitude <- -59.11781088
-period <- 16 # days in between observations
-#------------------------------------------------------------
-# get col_id & row_id from lon & lat
-#------------------------------------------------------------
-crid <- .wgs84gmpi(cbind(longitude, latitude), .calcPixelSize(4800, .calcTileWidth()))
-crid <- as.vector(crid)
-#------------------------------------------------------------
-# get data from SciDB
-#------------------------------------------------------------
-# con <- scidbconnect(host = "127.0.0.1", port = 8080)
-# afl <- paste("between(mod13q1_512,", paste(c(crid, 0, crid, 400), collapse = ","), ")", sep = '')
-# vi.sdb <- iquery(con, afl, return = TRUE, binary = FALSE)
-# save(vi.sdb, file = "vi.Rdata")
-load("vi.Rdata")
-#------------------------------------------------------------
-# export TS to data frame
-#------------------------------------------------------------
-vi.df <- vi.sdb[c(veg_index, "reliability", "quality", "time_id")]
-# vi.df["timeIndex"] <- (1:nrow(vi.df) + 2)                                     # adjustment if first observations is at time_index == 0
-#------------------------------------------------------------
-# plot original data by realibility
-#------------------------------------------------------------
-plot(vi.df$evi, type = "l")
-#------------------------------------------------------------
-# expose holes in the time_id
-#------------------------------------------------------------
-if(sum((seq_along(vi.df$time_id) + (vi.df$time_id[1] - 1)) - vi.df$time_id)){
-  ntid.df <- data.frame(time_id = seq(from = vi.df$time_id[1], to = vi.df$time_id[length(vi.df$time_id)], by = 1))
-  vi.df <- merge(vi.df, ntid.df, by = "time_id", all = TRUE)
-}
-#------------------------------------------------------------
-# filter
-#------------------------------------------------------------
+# Analyze a time-series
 #
-#------------------------------------------------------------
-# fill in the NAs
-# NOTE: time_id MUST BE the first column
-#------------------------------------------------------------
-vi.zoo <- zoo::na.locf(zoo::zoo(as.matrix(vi.df[-1]), order.by = vi.df$time_id)) # fill in the NAs
-vi.df <- data.frame(time_id = zoo::index(vi.zoo), zoo::coredata(vi.zoo))
-#------------------------------------------------------------
-# BFAST THE WHOLE TS AT ONCE
-#------------------------------------------------------------
-vi.ts <- ts(data = vi.df[, veg_index], 
-            freq = 365.25/period, 
-            start = lubridate::decimal_date(as.Date(unlist(.time_id2date(vi.df$time_id[1], period))))
-)
-stable_years <- 7
-# bf <-  bfast::bfastmonitor(vi.ts, start = time(vi.ts)[as.integer(365.25/period * stable_years)], history = time(vi.ts)[1])
-bf <-  bfast::bfastmonitor(vi.ts, start = time(vi.ts)[as.integer(365.25/period * stable_years)], history = "all")
-plot(bf)
-print(bf$breakpoint)
-# TODO: Where do I get the start & history parameters?
-
+# @param ts.df      A data.frame. Each row is an observation
+# @return           A list of atomic values
+analyzeTS <- function(ts.df){
+  json.dat <- jsonlite::read_json("data.json")
+  res.df <- data.frame(cid = ts.df$cid[1], rid = ts.df$rid[1], num_row = nrow(ts.df), num_col = ncol(ts.df), stuff = "I'm cool", len_json = length(json.dat))
+  return(res.df)
+}
