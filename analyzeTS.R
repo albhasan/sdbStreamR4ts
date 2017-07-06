@@ -1,7 +1,6 @@
 #-------------------------------------------------------------------------------
-# load a chunk # iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62400, 43200, 367), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/rs_test07.R', 'format=df', 'types=int32,int32,string')"
+## load test chunks from the data directory. i.e.
 # load("data/input.df-38447140")
-# load("data/input.df-27271652")
 #-------------------------------------------------------------------------------
 
 # Analyze a time-series
