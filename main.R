@@ -4,7 +4,7 @@
 # NOTES: 
 #
 # example 
-# Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=dtwSatAnalisys.R
+# Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=analyzeTS.R
 #
 # example SciDB stream query:
 # iquery -aq "
@@ -20,7 +20,7 @@
 #       ), 
 #      <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]
 #     ), 
-#     'Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=dtwSatAnalisys.R', 
+#     'Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=analyzeTS.R', 
 #    'format=df', 'types=int32,int32,string'
 #  ),
 #  query201706051451-5586
@@ -86,8 +86,8 @@ while( TRUE )
   # local test 
   # NOTE: comment before running the real deal
   #-----------------------------------------------------------------------------
-  script_name <- "bfast_example2.R"                                             
-  script_folder <- "/home/alber/Documents/Dropbox/alberLocal/inpe/projects/sdb_bfast"
+  script_name <- "bfast.R"
+  script_folder <- "/home/alber/Documents/ghProjects/sdbStreamR4ts"
   load(file.path(script_folder, "data/input.df-27271652", fsep = .Platform$file.sep))
   num_cores = getOption("mc.cores", 2L)                                         # use all the cores
   #write(jsonlite::toJSON(data.frame(x = rnorm(10), y = rnorm(10), z = rnorm(10))), file = "data.json")
@@ -99,11 +99,11 @@ while( TRUE )
   # leave at least one core free for the OS
   num_cores = 32 - 7 - 1 # num_cores = getOption("mc.cores", 2L)
   setwd(script_folder)
+  source(file.path(script_folder, script_name, fsep = .Platform$file.sep))
   #-----------------------------------------------------------------------------
   # load the user's code
   #-----------------------------------------------------------------------------
   #for(f in list.files(path = script_folder, pattern = "\\.R$")){source(file.path(script_folder, f, fsep = .Platform$file.sep))} # load ALL the script files
-  source(file.path(script_folder, script_name, fsep = .Platform$file.sep))
   if(!("analyzeTS" %in% ls())){
     stop("The function analyzeTS() was not found!")
   }
