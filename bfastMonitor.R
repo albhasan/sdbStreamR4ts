@@ -9,11 +9,7 @@
 # ts.df <- subset(input.df, cid == crid.df[265,]$cid & rid == crid.df[265,]$rid)
 # analyzeTS(ts.df)
 ## 3b - Test using all the time series
-# 
-parallel::mclapply(1:nrow(crid.df), FUN = function(x, input.df){
-  ts.df <- subset(input.df, cid == crid.df[x,]$cid & rid == crid.df[x,]$rid)
-  return(analyzeTS(ts.df))
-}, input.df = input.df)
+# parallel::mclapply(1:nrow(crid.df), FUN = function(x, input.df){ts.df <- subset(input.df, cid == crid.df[x,]$cid & rid == crid.df[x,]$rid);return(analyzeTS(ts.df))}, input.df = input.df)
 #-------------------------------------------------------------------------------
 
 
@@ -24,11 +20,15 @@ parallel::mclapply(1:nrow(crid.df), FUN = function(x, input.df){
 # @return           A list of atomic values
 analyzeTS <- function(ts.df){
   #------------------------------------------------------------
+  # response
+  #------------------------------------------------------------
+  bp <- 0
+  bps <- ""
+  #------------------------------------------------------------
   # validation
   #------------------------------------------------------------
-  # TODO: return empty data.frame instead
   if(nrow(ts.df) == 0 || ncol(ts.df) == 0){
-    stop("Empty data.frame")
+    return(data.frame(breakpoint = bp, dpStr = bps))
   }
   #------------------------------------------------------------
   # configuration
@@ -42,6 +42,9 @@ analyzeTS <- function(ts.df){
   ts.df[ts.df$reliability == -1, veg_index] <- NA                               # fill, no data
   ts.df[ts.df$reliability == 2, veg_index] <- NA                                # snow, ice
   ts.df[ts.df$reliability == 3, veg_index] <- NA                                # clouds
+  if(sum(is.na(ts.df[veg_index]))/nrow(ts.df) > 0.5){
+    return(data.frame(breakpoint = bp, dpStr = bps))                            # time-series of invalid data - too much NAs after filtering
+  }
   #------------------------------------------------------------
   # remove low quality data
   #------------------------------------------------------------
@@ -75,14 +78,14 @@ analyzeTS <- function(ts.df){
               )
   )
   bf <-  bfast::bfastmonitor(vi.ts, start = time(vi.ts)[as.integer(365.25/period * stable_years)], history = "all")  
-  bp <- 0
   if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint)){
     bp <- bf$breakpoint
+    bps <- format(lubridate::date_decimal(bp), format = "%Y-%m-%d")
   }
   #------------------------------------------------------------
   # return
   #------------------------------------------------------------
-  return(data.frame(breakpoint = bp))
+  return(data.frame(breakpoint = bp, dpStr = bps))
 }
 
 
