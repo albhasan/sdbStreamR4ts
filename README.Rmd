@@ -17,6 +17,24 @@ sdbStreamR4ts is a set of R scripts for processing time series using SciDB's str
 [SciDB stream](https://github.com/Paradigm4/stream/) is a plug-in which implements a SciDB's operator for the AFL language. In a nutshell, stream enables each instance of SciDB to call an arbitrary program (R, Python, Java, C, sh) in parallel. Then, SciDB stores the results of the program for each instance in a single array. Each SciDB instance is responsible for calling the program,
 passing any parameters and data (one chunk at the time) and finally to collect the response. This map-reduce approach allows SciDB to take advantage of any of the available data-processing libraries and it does not depend on SHIM
 
+
+## Pre-requisites
+
+* A running cluster of [SciDB](https://en.wikipedia.org/wiki/SciDB)  with [SciDB stream](https://github.com/Paradigm4/stream/).
+* [R](https://www.r-project.org) installed in all the machines in the SciDB cluster.
+* A directory shared by all the SciDB's instances.
+
+
+## Files
+
+* `README.Rmd`      An RMarkdown document used to generate the README file
+* `README.md`       This document.
+* `analyzeTS.R`     An R script. An example of the basic usage of the `analyzeTS` function.
+* `bfastMonitor.R` 	An R script. It runs the BFAST MONITOR algorithm for one time series.
+* `data.json` 	    A data file. An data sample which can be loaded by the `analyzeTS` function.
+* `main.R`          An R script. The main script. It takes a SciDB's chunk of data, converts it to a data frame, splits it into time-series can calls the `analyzeTS` function on each time series.
+
+
 ## Spatio-temporal data in SciDB
 
 SciDB can store large spatio-temporal arrays built from satellite images such as MODIS and LANDSAT. For example, the following is an schema to store MOD13Q1 data:
