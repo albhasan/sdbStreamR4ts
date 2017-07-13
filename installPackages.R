@@ -1,6 +1,7 @@
 ###########################################################
 # INSTALL PACKAGES
-#Rscript installPackages.R packages=RCurl,snow,ptw,bitops,mapdata,XML,rgeos,rgdal,MODIS,scidb verbose=0 quiet=0
+# Rscript installPackages.R packages=RCurl,snow,ptw,bitops,mapdata,XML,rgeos,rgdal,MODIS,scidb verbose=0 quiet=0
+# Rscript installPackages.R packages=zoo,bfast,lubridate verbose=0 quiet=0
 ###########################################################
 repositories <- c("http://cran.us.r-project.org", 
            "http://cran.r-mirror.de/", 
