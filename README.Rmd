@@ -1,7 +1,8 @@
 ---
 title: "sdbStreamR4ts"
-author: "Alber Sánchez"
+author: "Alber Sánchez, Luiz Assis, Eduardo Llapa"
 output: github_document
+# toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -27,12 +28,13 @@ passing any parameters and data (one chunk at the time) and finally to collect t
 
 ## Files
 
-* `README.Rmd`      An RMarkdown document used to generate the README file
-* `README.md`       This document.
-* `analyzeTS.R`     An R script. An example of the basic usage of the `analyzeTS` function.
-* `bfastMonitor.R` 	An R script. It runs the BFAST MONITOR algorithm for one time series.
-* `data.json` 	    A data file. An data sample which can be loaded by the `analyzeTS` function.
-* `main.R`          An R script. The main script. It takes a SciDB's chunk of data, converts it to a data frame, splits it into time-series can calls the `analyzeTS` function on each time series.
+* `README.Rmd`        An RMarkdown document used to generate the README file
+* `README.md`         This document.
+* `analyzeTS.R`       An R script. An example of the basic usage of the `analyzeTS` function.
+* `bfastMonitor.R` 	  An R script. It runs the BFAST MONITOR algorithm for one time series.
+* `data.json` 	      A data file. An data sample which can be loaded by the `analyzeTS` function.
+* `installPackages.R` An R script. Install R packages.
+* `main.R`            An R script. The main script. It takes a SciDB's chunk of data, converts it to a data frame, splits it into time-series can calls the `analyzeTS` function on each time series.
 
 
 ## Spatio-temporal data in SciDB
@@ -105,9 +107,17 @@ This line of code loads the `ts.df` object to the current R session. This chunk 
 
 ## Usage examples
 
+The packages required by the analyzeTS function must be installed in all the machines in the SciDB cluster. This could be automatized using the `installPackages.R` script as follows:
+
+`Rscript installPackages.R packages=mapdata,XML,rgeos,rgdal,MODIS,scidb`
+
+
+
 Given the MODIS array *mod13q1_512* with the following schema:
 
 `<ndvi:int16, evi:int16, quality:uint16, red:int16, nir:int16, blue:int16, mir:int16, view_zenith:int16, sun_zenith:int16, relative_azimuth:int16, day_of_year:int16, reliability:int8> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]`
+
+
 
 The *sdbStreamR4ts* scripts could be called like this:
 
