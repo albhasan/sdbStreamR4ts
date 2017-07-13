@@ -85,7 +85,7 @@ analyzeTS <- function(ts.df){
   #------------------------------------------------------------
   # return
   #------------------------------------------------------------
-  return(data.frame(breakpoint = bp, dpStr = bps))
+  return(data.frame(breakpoint = as.double(bp), dpStr = as.character(bps)))
 }
 
 
