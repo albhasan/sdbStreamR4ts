@@ -86,10 +86,10 @@ while( TRUE )
   # local test 
   # NOTE: comment before running the real deal
   #-----------------------------------------------------------------------------
-  script_name <- "bfast.R"
-  script_folder <- "/home/alber/Documents/ghProjects/sdbStreamR4ts"
-  load(file.path(script_folder, "data/input.df-27271652", fsep = .Platform$file.sep))
-  num_cores = getOption("mc.cores", 2L)                                         # use all the cores
+  #script_name <- "bfast.R"
+  #script_folder <- "/home/alber/Documents/ghProjects/sdbStreamR4ts"
+  #load(file.path(script_folder, "data/input.df-27271652", fsep = .Platform$file.sep))
+  #num_cores = getOption("mc.cores", 2L)                                         # use all the cores
   #write(jsonlite::toJSON(data.frame(x = rnorm(10), y = rnorm(10), z = rnorm(10))), file = "data.json")
   #-----------------------------------------------------------------------------
   # configuration
