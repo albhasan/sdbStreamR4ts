@@ -1,6 +1,10 @@
 #-------------------------------------------------------------------------------
 # How to test the analyzeTS function
 #-------------------------------------------------------------------------------
+## 0 - Required packages
+# sudo Rscript /home/scidb/shared/scripts/sdbStreamR4ts/installPackages.R packages=zoo,bfast,lubridate verbose=0 quiet=0  # using the shell
+# install.packages(c("zoo", "bfast", "lubridate"))        # inside an R session 
+# require(zoo); require(bfast); require(lubridate)
 ## 1 - Load a sample chunk
 # load("data/input.df-27271652") # load("data/input.df-38447140")
 ## 2 - Get the col and row ids of each time series
@@ -11,6 +15,9 @@
 ## 3b - Test using all the time series
 # parallel::mclapply(1:nrow(crid.df), FUN = function(x, input.df){ts.df <- subset(input.df, cid == crid.df[x,]$cid & rid == crid.df[x,]$rid);return(analyzeTS(ts.df))}, input.df = input.df)
 #-------------------------------------------------------------------------------
+
+
+
 
 
 
