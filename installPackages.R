@@ -5,7 +5,6 @@
 ###########################################################
 repositories <- c("http://cran.us.r-project.org", 
            "http://cran.r-mirror.de/", 
-           "http://www.laqee.unal.edu.co/CRAN/", 
            "http://ftp.iitm.ac.in/cran/",
            "http://cran.mirror.ac.za/",
            "http://cran.ms.unimelb.edu.au/", 
@@ -26,7 +25,13 @@ for (arg in commandArgs()){
 
 packages <- unlist(strsplit(values[which(keys == "packages")],  ","))
 #repositories <- unlist(strsplit(values[which(keys == "repositories")], ","))
-verbose <- as.numeric(values[which(keys == "verbose")])
-quiet <- as.numeric(values[which(keys == "quiet")])
+verbose <- TRUE
+quiet <- FALSE
+if(length(which(keys == "verbose")) > 0){
+  verbose <- as.numeric(values[which(keys == "verbose")])
+}
+if(length(which(keys == "quiet")) > 0){
+  quiet <- as.numeric(values[which(keys == "quiet")])
+}
 
 install.packages(pkgs = packages, repos = repositories, verbose = verbose, quiet = quiet)
