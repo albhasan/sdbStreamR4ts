@@ -31,3 +31,9 @@ vignettes/*.pdf
 # Temporary files created by R markdown
 *.utf8.md
 *.knit.md
+
+###############################
+# gedit's temp files
+*.R~
+*.sh~
+.gitignore~
