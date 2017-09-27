@@ -28,7 +28,7 @@
 # iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62402, 43202, 15), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=analyzeTS.R', 'format=df', 'types=int32,int32,int32,int32,int32')"
 #
 ## EXAMPLE 3: A SciDB query runs BFAST MONITOR on 100 time series
-# iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62409, 43209, 511), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=bfastMonitor.R', 'format=df', 'types=double,string')"
+# iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62409, 43209, 511), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=bfastMonitor.R', 'format=df', 'types=int32,int32,double,string')"
 ################################################################################
 
 #---- get parameters from command line ----
