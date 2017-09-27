@@ -109,9 +109,7 @@ This line of code loads the `ts.df` object to the current R session. This chunk 
 
 The packages required by the analyzeTS function must be installed in all the machines in the SciDB cluster. This could be automatized using the `installPackages.R` script as follows:
 
-`Rscript installPackages.R packages=mapdata,XML,rgeos,rgdal,MODIS,scidb`
-
-
+`Rscript installPackages.R packages=XML,scidb`
 
 Given the MODIS array *mod13q1_512* with the following schema:
 
