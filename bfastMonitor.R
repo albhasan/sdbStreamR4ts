@@ -1,70 +1,59 @@
+################################################################################
+# ANALYZE A TIME SERIES USING BFAST MONITOR
 #-------------------------------------------------------------------------------
-# How to test the analyzeTS function
+# NOTES: 
+# - It requires the packages zoo, bfast, and lubridate. They must be installed 
+#   in each machine in the SciDB cluster. i.e. run:
+#   Rscript installPackages.R packages=zoo,bfast,lubridate
 #-------------------------------------------------------------------------------
-## 1 - Load a sample chunk
-# load("data/input.df-27271652") # load("data/input.df-38447140")
-## 2 - Get the col and row ids of each time series
-# crid.df <- unique(input.df[c("cid", "rid")])
-## 3a - Test a single time series, for example, the time-series in the row 265
-# ts.df <- subset(input.df, cid == crid.df[265,]$cid & rid == crid.df[265,]$rid)
-# analyzeTS(ts.df)
-## 3b - Test using all the time series
-# 
-parallel::mclapply(1:nrow(crid.df), FUN = function(x, input.df){
-  ts.df <- subset(input.df, cid == crid.df[x,]$cid & rid == crid.df[x,]$rid)
-  return(analyzeTS(ts.df))
-}, input.df = input.df)
-#-------------------------------------------------------------------------------
+# DEBUG:
+#   load("./data/ts.df-27271652")                 # Load a chunk of SciDB data (~40x40 time series)
+#   crids <- unique(ts.df[c("cid", "rid")])       # List unique column-row of the time-series
+#   crid <- crids[sample(1:nrow(crids), 1), ]     # Select a single time series
+#   ts.df <- ts.df[ts.df$cid == crid$cid & ts.df$rid == crid$rid, ]
+#   source("bfastMonitor.R")
+#   plot(y = ts.df$evi, x = ts.df$tid, type = "l")
+#   analyzeTS(ts.df)
+################################################################################
 
-
-
-# Analyze a time-series using the BFAST method
+# Analyze a time-series using the BFAST MONITOR method
 #
 # @param ts.df      A data.frame made of MOD13Q1 data. Each row is a pixel. The expected columnas are the pixel's column id, row_di, time_id, vegetation index, quality measure, and realibility measure named as folllows c("cid", "rid", "tid", "evi", "quality", "reliability")
-# @return           A list of atomic values
+# @return           A data.frame of two columns. The break as double (breakpoint) and as a string (dpStr)
 analyzeTS <- function(ts.df){
-  #------------------------------------------------------------
-  # validation
-  #------------------------------------------------------------
-  # TODO: return empty data.frame instead
+  #---- setup ----
+  res <- data.frame(cid = ts.df$cid[1], rid = ts.df$rid[1], breakpoint = 0, 
+                    breakpointStr = "", stringsAsFactors = F)
+  #---- validation ----
   if(nrow(ts.df) == 0 || ncol(ts.df) == 0){
-    stop("Empty data.frame")
+    return(res)
   }
-  #------------------------------------------------------------
-  # configuration
-  #------------------------------------------------------------
+  #---- configuration ----
   veg_index <- "evi"                                                            # name of the vegetation index colum
   period <- 16                                                                  # days in between observations. i.e. 16 days for MOD13Q1
   stable_years <- 7                                                             # number of years considered stable for the BFAST algorithm
-  #------------------------------------------------------------
-  # remove low reliability data
-  #------------------------------------------------------------
+  #---- remove low reliability data ----
   ts.df[ts.df$reliability == -1, veg_index] <- NA                               # fill, no data
   ts.df[ts.df$reliability == 2, veg_index] <- NA                                # snow, ice
   ts.df[ts.df$reliability == 3, veg_index] <- NA                                # clouds
-  #------------------------------------------------------------
-  # remove low quality data
-  #------------------------------------------------------------
+  if(sum(is.na(ts.df[veg_index]))/nrow(ts.df) > 0.5){
+    return(res)                                                                 # time-series of invalid data - too much NAs after filtering
+  }
+  #---- remove low quality data ----
   ts.df <- addTSqua(ts.df)
   ts.df[ts.df$VI_useful == "Lowest quality", veg_index] <- NA
   ts.df[ts.df$VI_useful == "L1B data faulty", veg_index] <- NA
-  #------------------------------------------------------------
-  # expose holes in the time_id
-  #------------------------------------------------------------
+  #---- expose time holes ----
   if(sum((seq_along(ts.df$tid) + (ts.df$tid[1] - 1)) - ts.df$tid) != 0){
     ntid.df <- data.frame(tid = seq(from = ts.df$tid[1], to = ts.df$tid[length(ts.df$tid)], by = 1))
     ts.df <- merge(ts.df, ntid.df, by = "tid", all = TRUE)
   }
-  #------------------------------------------------------------
-  # fill in the NAs
-  #------------------------------------------------------------
+  #---- fill in the time holes ----
   if(sum(is.na(ts.df[veg_index])) > 0){
     vi.zoo <- zoo::na.locf(zoo::zoo(as.matrix(ts.df[-1]), order.by = ts.df$tid))
     ts.df <- data.frame(tid = zoo::index(vi.zoo), zoo::coredata(vi.zoo))
   }
-  #------------------------------------------------------------
-  # compute BFAST
-  #------------------------------------------------------------
+  #---- compute BFAST ----
   vi.ts <- ts(data = ts.df[, veg_index], 
               freq = 365.25/period, 
               start = lubridate::decimal_date(
@@ -75,14 +64,12 @@ analyzeTS <- function(ts.df){
               )
   )
   bf <-  bfast::bfastmonitor(vi.ts, start = time(vi.ts)[as.integer(365.25/period * stable_years)], history = "all")  
-  bp <- 0
   if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint)){
-    bp <- bf$breakpoint
+    res$breakpoint <- bf$breakpoint
+    res$breakpointStr <- format(lubridate::date_decimal(bf$breakpoint), format = "%Y-%m-%d")
   }
-  #------------------------------------------------------------
-  # return
-  #------------------------------------------------------------
-  return(data.frame(breakpoint = bp))
+  #---- return ----
+  return(res)
 }
 
 

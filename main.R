@@ -2,49 +2,38 @@
 # GET THE SCIDB CHUNKS PROVIDED BY SCIDB STREAMING
 #-------------------------------------------------------------------------------
 # NOTES: 
-#
-# example 
-# Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=analyzeTS.R
-#
-# example SciDB stream query:
-# iquery -aq "
-# store(
-#   stream(
-#     cast(
-#       project(
-#         apply(
-#           between(mod13q1_512, 62400, 43200, 0, 62500, 43300, 367), 
-#          cid, col_id, rid, row_id, tid, time_id
-#         ), 
-#         cid, rid, tid, evi, quality, reliability
-#       ), 
-#      <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]
-#     ), 
-#     'Rscript main.R script_folder=/home/scidb/shared/query201706051451-5586 script_name=analyzeTS.R', 
-#    'format=df', 'types=int32,int32,string'
-#  ),
-#  query201706051451-5586
-# )"
+# - Use full paths when calling R scripts
+# - It doesn't matter if the R scripts' directory is shared among all the 
+#   machines in the SciDB cluster
+# - The working directory of the main.R script is the same of the script_name.
+#   This way, the user provided script can read data and scripts 
+# - R packages must be installed in all machines in the SciDB cluster before 
+#   calling the main script
 #-------------------------------------------------------------------------------
-# TODO:
-# - how does one load packages?
+# DEBUG: 
+# - The expression write("A debug message", stderr()) writes to SciDB' error log
+#   i.e /home/scidb/data/0/0/scidb-stderr.log
 #-------------------------------------------------------------------------------
-# FAQ:
-# - What is WTSPS? Web Time Series Processing Service
+# USAGE:
+# - The amount and length of time series is controled by the BETWEEN clause
 #
-# - How do users load data files (i.e json)? This script sets the working 
-#     directory to the users' WTSPS request folder. That way, the users' script 
-#     load data just using the name of the file 
-#     json.dat <- jsonlite::read_json("data.json")
+## EXAMPLE 1: A SciDB query returns the properties of a single time series
+# iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62400, 43200, 15), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=analyzeTS.R', 'format=df', 'types=int32,int32,int32,int32,int32')"
+## Response
+# {instance_id,chunk_no,value_no} a0,a1,a2,a3,a4,a5
+# {0,0,0} 62400,43200,7,6,1,10
+#
+## EXAMPLE 2: A SciDB query returns the properties of 9 time series, (col_id, row_id, time_id)
+##            from (62400, 43200, 0) to (62402, 43202, 15) 
+# iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62402, 43202, 15), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=analyzeTS.R', 'format=df', 'types=int32,int32,int32,int32,int32')"
+#
+## EXAMPLE 3: A SciDB query runs BFAST MONITOR on 100 time series
+# iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62409, 43209, 511), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=bfastMonitor.R', 'format=df', 'types=int32,int32,double,string')"
 ################################################################################
-#-------------------------------------------------------------------------------
-# paramteres
-#-------------------------------------------------------------------------------
+
+#---- get parameters from command line ----
 script_folder <- NA
 script_name <- NA
-#-------------------------------------------------------------------------------
-# get script parameters from command line
-#-------------------------------------------------------------------------------
 argsep <- "="                                                                 # separator between the argument name and its value during invocation i.e. arg=value
 keys <- vector(mode = "character", length = 0)
 values <- vector(mode = "character", length = 0)
@@ -60,9 +49,7 @@ script_name <- unlist(strsplit(values[which(keys == "script_name")], ","))      
 if(is.na(script_folder) || is.na(script_name)){
   stop("Invalid parameters!")
 }
-#-------------------------------------------------------------------------------
-# get SciDB's chunk as data.frame
-#-------------------------------------------------------------------------------
+#---- sdb chunk 2 data.frame ----
 con_in = file("stdin", "rb")
 con_out = pipe("cat", "wb")
 while( TRUE )
@@ -76,41 +63,19 @@ while( TRUE )
     flush(con_out)
     break
   }
-  #
-  input.df = as.data.frame(input_list)
-  #-----------------------------------------------------------------------------
-  # save chunks as Rdata with randomized names
-  #-----------------------------------------------------------------------------
-  #save(input.df, file = file.path(script_folder, paste("input.df", sample(10000000:99000000, 1, replace = TRUE), sep = "-"), fsep = .Platform$file.sep))
-  #-----------------------------------------------------------------------------
-  # local test 
-  # NOTE: comment before running the real deal
-  #-----------------------------------------------------------------------------
-  script_name <- "bfast.R"
-  script_folder <- "/home/alber/Documents/ghProjects/sdbStreamR4ts"
-  load(file.path(script_folder, "data/input.df-27271652", fsep = .Platform$file.sep))
-  num_cores = getOption("mc.cores", 2L)                                         # use all the cores
-  #write(jsonlite::toJSON(data.frame(x = rnorm(10), y = rnorm(10), z = rnorm(10))), file = "data.json")
-  #-----------------------------------------------------------------------------
-  # configuration
-  #-----------------------------------------------------------------------------
-  # 32 cores per machine
-  # 7 SciDB instances per machine
-  # leave at least one core free for the OS
-  num_cores = 32 - 7 - 1 # num_cores = getOption("mc.cores", 2L)
+  input.df = as.data.frame(input_list, stringsAsFactors = F)
+  #---- configuration ----
+  # Each machine in the cluster has 32 cores and 7 SciDB instances
+  # Leave at least one core free for the OS
+  num_cores = 32 - 7 - 1 # num_cores <- parallel::detectCores()
   setwd(script_folder)
+  #---- load the analysis function ----
   source(file.path(script_folder, script_name, fsep = .Platform$file.sep))
-  #-----------------------------------------------------------------------------
-  # load the user's code
-  #-----------------------------------------------------------------------------
-  #for(f in list.files(path = script_folder, pattern = "\\.R$")){source(file.path(script_folder, f, fsep = .Platform$file.sep))} # load ALL the script files
   if(!("analyzeTS" %in% ls())){
     stop("The function analyzeTS() was not found!")
   }
-  #-----------------------------------------------------------------------------
-  # call the script on each time-series of the chunk
-  #-----------------------------------------------------------------------------
-  crid.df <- unique(input.df[c("cid", "rid")])                                  # get unique pairs of col & rows
+  #---- call the script on each time-series in the chunk ----
+  crid.df <- unique(input.df[c("cid", "rid")])
   res_script <- parallel::mclapply(1:nrow(crid.df), 
                                    mc.cores = num_cores, 
                                    FUN = function(x, crid.df, input.df){
@@ -120,9 +85,7 @@ while( TRUE )
                                    crid.df  = crid.df, 
                                    input.df = input.df
   )
-  #-----------------------------------------------------------------------------
-  # transpose res_script
-  #-----------------------------------------------------------------------------
+  #---- transpose response ----
   num_col <- length(res_script[[1]])
   num_row <- length(res_script)
   res_list <- lapply(1: num_col, FUN = function(x, res_script){
@@ -131,9 +94,7 @@ while( TRUE )
   res_script = res_script
   )
   names(res_list) <- names(res_script[[1]])
-  #-----------------------------------------------------------------------------
-  # cast to stream supported datatypes
-  #-----------------------------------------------------------------------------
+  #---- cast to stream supported datatypes ----
   res_list <- lapply(res_list, FUN = function(x){
     if(typeof(x) == "integer" || typeof(x) == "logical"){
       x <- as.integer(x)
@@ -146,9 +107,7 @@ while( TRUE )
     }
     return(x)
   })
-  #-----------------------------------------------------------------------------
-  # return top SciDB
-  #-----------------------------------------------------------------------------
+  #---- return to SciDB ----
   writeBin(serialize(res_list, NULL, xdr=FALSE), con_out)
   flush(con_out)
 }
