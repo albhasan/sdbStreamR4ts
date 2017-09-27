@@ -21,13 +21,14 @@
 # @param ts.df      A data.frame made of MOD13Q1 data. Each row is a pixel. The expected columnas are the pixel's column id, row_di, time_id, vegetation index, quality measure, and realibility measure named as folllows c("cid", "rid", "tid", "evi", "quality", "reliability")
 # @return           A data.frame of two columns. The break as double (breakpoint) and as a string (dpStr)
 analyzeTS <- function(ts.df){
+  #---- setup ----
+  res <- data.frame(cid = ts.df$cid[1], rid = ts.df$rid[1], breakpoint = 0, 
+                    breakpointStr = "", stringsAsFactors = F)
   #---- validation ----
   if(nrow(ts.df) == 0 || ncol(ts.df) == 0){
-    return(data.frame(breakpoint = bp, dpStr = bps))
+    return(res)
   }
   #---- configuration ----
-  bp <- 0
-  bps <- ""
   veg_index <- "evi"                                                            # name of the vegetation index colum
   period <- 16                                                                  # days in between observations. i.e. 16 days for MOD13Q1
   stable_years <- 7                                                             # number of years considered stable for the BFAST algorithm
@@ -36,7 +37,7 @@ analyzeTS <- function(ts.df){
   ts.df[ts.df$reliability == 2, veg_index] <- NA                                # snow, ice
   ts.df[ts.df$reliability == 3, veg_index] <- NA                                # clouds
   if(sum(is.na(ts.df[veg_index]))/nrow(ts.df) > 0.5){
-    return(data.frame(breakpoint = bp, dpStr = bps))                            # time-series of invalid data - too much NAs after filtering
+    return(res)                                                                 # time-series of invalid data - too much NAs after filtering
   }
   #---- remove low quality data ----
   ts.df <- addTSqua(ts.df)
@@ -64,11 +65,11 @@ analyzeTS <- function(ts.df){
   )
   bf <-  bfast::bfastmonitor(vi.ts, start = time(vi.ts)[as.integer(365.25/period * stable_years)], history = "all")  
   if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint)){
-    bp <- bf$breakpoint
-    bps <- format(lubridate::date_decimal(bp), format = "%Y-%m-%d")
+    res$breakpoint <- bf$breakpoint
+    res$breakpointStr <- format(lubridate::date_decimal(bf$breakpoint), format = "%Y-%m-%d")
   }
   #---- return ----
-  return(data.frame(breakpoint = as.double(bp), dpStr = as.character(bps), stringsAsFactors = F))
+  return(res)
 }
 
 
