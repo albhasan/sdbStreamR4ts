@@ -111,9 +111,10 @@ while( TRUE )
   )
   names(res_list) <- names(res_script[[1]])
   #---- cast to stream supported datatypes ----
+  # NOTE: Only double, string, or int32 attributes are allowed
   res_list <- lapply(res_list, FUN = function(x){
-#TODO: Test to integer cast. SciDB complaing about the number of columns received
     if(typeof(x) == "integer" || typeof(x) == "logical"){
+#TODO: Test to integer cast. SciDB complaing about the number of columns received
       x <- as.integer(x)
     }else if(typeof(x) == "double"){
       x <- as.double(x)
