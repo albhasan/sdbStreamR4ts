@@ -1,7 +1,7 @@
 ################################################################################
 # GET THE SCIDB CHUNKS PROVIDED BY SCIDB STREAMING
-#-------------------------------------------------------------------------------
-# NOTES: 
+#
+#---- NOTES: ----
 # - Use full paths when calling R scripts
 # - It doesn't matter if the R scripts' directory is shared among all the 
 #   machines in the SciDB cluster
@@ -9,12 +9,12 @@
 #   This way, the user provided script can read data and scripts 
 # - R packages must be installed in all machines in the SciDB cluster before 
 #   calling the main script
-#-------------------------------------------------------------------------------
-# DEBUG: 
+#
+#---- DEBUG: -----
 # - The expression write("A debug message", stderr()) writes to SciDB' error log
 #   i.e /home/scidb/data/0/0/scidb-stderr.log
-#-------------------------------------------------------------------------------
-# USAGE:
+#---- USAGE: ----
+#
 # - The amount and length of time series is controled by the BETWEEN clause
 #
 ## EXAMPLE 1: A SciDB query returns the properties of a single time series
@@ -27,8 +27,24 @@
 ##            from (62400, 43200, 0) to (62402, 43202, 15) 
 # iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62402, 43202, 15), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=analyzeTS.R', 'format=df', 'types=int32,int32,int32,int32,int32')"
 #
-## EXAMPLE 3: A SciDB query runs BFAST MONITOR on 100 time series
+## EXAMPLE 3:  Same as example 2 but it redimension the answer to a 2D array
+# iquery -aq "redimension(stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62402, 43202, 15), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=analyzeTS.R', 'format=df', 'types=int32,int32,int32,int32,int32', 'names=col_id,row_id,nrow,ncol,lenjson'), <nrow:int32, ncol:int32, lenjson:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40])"
+#
+## EXAMPLE 4:  Same as example 2 but it redimension the answer to a 3D array. Note that, the query results do NOT have a temporal index
+# iquery -aq "redimension(stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62402, 43202, 15), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=analyzeTS.R', 'format=df', 'types=int32,int32,int32,int32,int32', 'names=col_id,row_id,nrow,ncol,lenjson'), <nrow:int32, ncol:int32, lenjson:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512])"
+#
+## EXAMPLE 5: A SciDB query runs BFAST MONITOR on 100 time series
 # iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62409, 43209, 511), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=bfastMonitor.R', 'format=df', 'types=int32,int32,double,string')"
+#
+## EXAMPLE 6: Same as example 5, but it redimensions the query response to a 2D array
+# iquery -aq "redimension(stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62409, 43209, 511), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=bfastMonitor.R', 'format=df', 'types=int32,int32,double,string', 'names=col_id,row_id,breakpoint,breakpointStr'), <breakpoint:double, breakpointStr:string> [col_id=0:172799:0:40; row_id=0:86399:0:40])"
+#
+## EXAMPLE 7: Same as example 5, but it redimensions the query response to a 3D array. Note that, the query results do NOT have a temporal index
+# iquery -aq "redimension(stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62409, 43209, 511), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=bfastMonitor.R', 'format=df', 'types=int32,int32,double,string', 'names=col_id,row_id,breakpoint,breakpointStr'), <breakpoint:double, breakpointStr:string> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512])"
+#
+## EXAMPLE 8: A SciDB query runs the KALMAN FILTER on 100 time series
+# iquery -aq "stream(cast(project(apply(between(mod13q1_512, 62400, 43200, 0, 62409, 43209, 511), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbstream/main.R script_folder=/home/scidb/shared/scripts/sdbstream script_name=kalmanFilter.R', 'format=df', 'types=int32,int32,double,string')"
+#
 ################################################################################
 
 #---- get parameters from command line ----
@@ -95,8 +111,10 @@ while( TRUE )
   )
   names(res_list) <- names(res_script[[1]])
   #---- cast to stream supported datatypes ----
+  # NOTE: Only double, string, or int32 attributes are allowed
   res_list <- lapply(res_list, FUN = function(x){
     if(typeof(x) == "integer" || typeof(x) == "logical"){
+#TODO: Test to integer cast. SciDB complaing about the number of columns received
       x <- as.integer(x)
     }else if(typeof(x) == "double"){
       x <- as.double(x)

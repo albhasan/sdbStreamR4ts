@@ -1,21 +1,18 @@
 #*******************************************************************************
-# ANALYZE A TIME SERIES USING BFAST MONITOR
-#-------------------------------------------------------------------------------
+# DETECT DEFORESTATION USING THE KALMAN FILTER AND TIME SERIES OF VEGETATION INDEXES
 #---- NOTES: ----
-# - It requires the packages zoo, bfast, and lubridate. They must be installed 
-#   in each machine in the SciDB cluster. i.e. run:
-#   Rscript installPackages.R packages=zoo,bfast,lubridate
+# - The KF code was adapted from https://youtu.be/PZrFFg5_Sd0?list=PLX2gX-ftPVXU3oUFNATxGXY90AULiqnWT
 #---- DEBUG: ----
 #   load("./data/ts.df-27271652")                 # Load a chunk of SciDB data (~40x40 time series)
 #   crids <- unique(ts.df[c("cid", "rid")])       # List unique column-row of the time-series
 #   crid <- crids[sample(1:nrow(crids), 1), ]     # Select a single time series
 #   ts.df <- ts.df[ts.df$cid == crid$cid & ts.df$rid == crid$rid, ]
-#   source("bfastMonitor.R")
+#   source("kalmanFilter.R")
 #   plot(y = ts.df$evi, x = ts.df$tid, type = "l")
 #   analyzeTS(ts.df)
 #*******************************************************************************
 
-# Analyze a time-series using the BFAST MONITOR method
+# Analyze a time-series using the KALMAN FILTER
 #
 # @param ts.df      A data.frame made of MOD13Q1 data. Each row is a pixel. The expected columnas are the pixel's column id, row_di, time_id, vegetation index, quality measure, and realibility measure named as folllows c("cid", "rid", "tid", "evi", "quality", "reliability")
 # @return           A data.frame of two columns. The break as double (breakpoint) and as a string (dpStr)
@@ -28,9 +25,9 @@ analyzeTS <- function(ts.df){
     return(res)
   }
   #---- configuration ----
+  sds <- 3                                                                      # number of standard deviations above and under the mean                                
   veg_index <- "evi"                                                            # name of the vegetation index colum
   period <- 16                                                                  # days in between observations. i.e. 16 days for MOD13Q1
-  stable_years <- 7                                                             # number of years considered stable for the BFAST algorithm
   #---- remove low reliability data ----
   ts.df[ts.df$reliability == -1, veg_index] <- NA                               # fill, no data
   ts.df[ts.df$reliability == 2, veg_index] <- NA                                # snow, ice
@@ -48,27 +45,130 @@ analyzeTS <- function(ts.df){
     ts.df <- merge(ts.df, ntid.df, by = "tid", all = TRUE)
   }
   #---- fill in the time holes ----
-  if(sum(is.na(ts.df[veg_index])) > 0){
-    vi.zoo <- zoo::na.locf(zoo::zoo(as.matrix(ts.df[veg_index]), order.by = ts.df$tid))
-    ts.df <- data.frame(tid = zoo::index(vi.zoo), zoo::coredata(vi.zoo))
+  #if(sum(is.na(ts.df[veg_index])) > 0){
+  #  vi.zoo <- zoo::na.locf(zoo::zoo(as.matrix(ts.df[veg_index]), order.by = ts.df$tid))
+  #  ts.df <- data.frame(tid = zoo::index(vi.zoo), zoo::coredata(vi.zoo))
+  #}
+  #---- filter ----
+  kf <- kalmanfilter(measurement = ts.df[[veg_index]],
+                     error_in_measurement = NULL,
+                     initial_estimate = NULL,
+                     initial_error_in_estimate = NULL)
+  #---- KF - VEG_INDEX differences ----
+  dif <- kf[["estimation"]] - ts.df[veg_index]
+  dif[is.na(dif)] <- 0
+  dif <- cbind(dif, cumsum(dif))
+  colnames(dif) <- c('kf-mea', 'cumsum')
+  #---- cumsum of KF - VEG_INDEX
+  csdf <- matrix(data = NA, ncol = 6, nrow = 0)
+  for(i in 1:nrow(dif['cumsum'])){
+    d <- dif['cumsum'][c(1:i),]
+    difmn <- mean(d)
+    difmd <- median(d)
+    difsd <- sd(d)
+    difmad <- mad(d)
+    difmax <- max(d)
+    difmin <- min(d)
+    csdf <- rbind(csdf, c(difmn, difmd, difsd, difmad, difmax, difmin))
   }
-  #---- compute BFAST ----
-  vi.ts <- ts(data = ts.df[, veg_index], 
-              freq = 365.25/period, 
-              start = lubridate::decimal_date(
-                as.Date(
-                  unlist(time_id2date(ts.df$tid[1], period)), 
-                  origin = "1970-01-01"
-                )
-              )
-  )
-  bf <-  bfast::bfastmonitor(vi.ts, start = time(vi.ts)[as.integer(365.25/period * stable_years)], history = "all")  
-  if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint)){
-    res$breakpoint <- bf$breakpoint
-    res$breakpointStr <- format(lubridate::date_decimal(bf$breakpoint), format = "%Y-%m-%d")
+  csdf <- as.data.frame(csdf)
+  colnames(csdf) <- c("mean", "median", "sd", "mad", "max", "min")
+  #---- control limits ----
+  controlmn <- data.frame(csdf$mean, csdf$mean + (csdf$sd * sds), csdf$mean - (csdf$sd * sds), dif['cumsum'])
+  colnames(controlmn) <- c("mean", paste(sds, "sdup", sep=""), paste(sds, "sddown", sep=""), "cumsum")
+  rownames(controlmn) <- unlist(lapply(time_id2date(ts.df$time_id, 16), as.character))
+  #---- observation is out of control ----
+  controlmn$outofcontrol <- controlmn['cumsum'] > controlmn[paste(sds, "sdup", sep="")] | controlmn['cumsum'] < controlmn[paste(sds, "sddown", sep="")]
+  controlmn$outofcontrol[1, ] <- FALSE
+  if(sum(controlmn$outofcontrol) > 0){
+    tidDeforestation <- ts.df[controlmn$outofcontrol, "tid"][1]
+    #TODO: WRONG CASTING?????????????????????????????????????????????????????????????????????
+    res$breakpoint <- as.double(time_id2ydoy(time_id = tidDeforestation, period = period))
+    res$breakpointStr <- ydoy2date(res$breakpoint)
   }
-  #---- return ----
+  #---- res ----
   return(res)
+}
+
+
+
+
+# Compute the Kalman filter
+#
+# @param measurement                    A vector of measurements
+# @param error_in_measurement           A vector of errors in the measuments
+# @param initial_estimate               A first estimation of the measurement
+# @param initial_error_in_estimate      A first error in the estimation
+# @return                               A matrix of 3 columns estimate, error_in_estimate, and kalman_gain
+kalmanfilter <- function(measurement,
+                         error_in_measurement = NULL,
+                         initial_estimate = NULL,
+                         initial_error_in_estimate = NULL){
+  kg <- vector(mode = "logical", length = length(measurement) + 1)
+  est <- vector(mode = "logical", length = length(measurement) + 1)
+  e_est <- vector(mode = "logical", length = length(measurement) + 1)
+  #
+  # default values
+  if(is.null(initial_estimate) || is.na(initial_estimate)){
+    initial_estimate <- base::mean(measurement, na.rm = TRUE)
+  }
+  if(is.null(initial_error_in_estimate) || is.na(initial_error_in_estimate)){
+    initial_error_in_estimate <- base::abs(stats::sd(measurement, na.rm = TRUE))
+  }
+  if(is.null(error_in_measurement)){
+    error_in_measurement <- rep(stats::sd(measurement, na.rm = TRUE), length.out = base::length(measurement))
+  }
+  #
+  # Compute the Kalman gain
+  #
+  # @param e_est  A numeric. The error in the estimate
+  # @param e_mea  A numeric. The error in the measurement
+  # @return       A numeric. The Kalman gain
+  .KG <- function(e_est, e_mea){
+    return(e_est/(e_est + e_mea))
+  }
+  #
+  # Compute the current estimate
+  #
+  # @param kg     A numeric. The Kalman gain
+  # @param est_t1 A numeric. The estimate at t-1
+  # @param mea    A numeric. The current measurement
+  # @return       A numeric. The current estimate
+  .EST_t <- function(kg, est_t1, mea){
+    est_t1 + kg * (mea - est_t1)
+  }
+  #
+  # Compute the error in the current estimate
+  #
+  # @param kg       A numeric. The Kalman gain
+  # @param e_est_t1 A numeric. The error in the estimate at t-1
+  # @return         A numeric. The error in the current estimate
+  .E_EST_t <- function(kg, e_est_t1){
+    (1 - kg) * e_est_t1
+  }
+  #
+  # add initial results
+  est[1] <- initial_estimate[1]
+  e_est[1] <- initial_error_in_estimate[1]
+  kg[1] <- NA
+  # compute
+  for(i in 2:(length(measurement) + 1)){
+    kg[i] <- .KG(e_est[i - 1], error_in_measurement[i - 1])
+    m <- measurement[i - 1]
+    if(is.na(m)){
+      m <- est[i - 1]                                                           # if the measurement is missing, use the estimation instead
+    }
+    est[i] <- .EST_t(kg[i], est[i - 1], m)
+    e_est[i] <- .E_EST_t(kg[i], e_est[i - 1])
+  }
+  # format the results: remove the row before the first measurement (t-1)
+  return(
+    list(
+      estimation = est[2:length(est)],
+      error_in_estimate = e_est[2:length(e_est)],
+      kalman_gain = kg[2:length(kg)]
+    )
+  )
 }
 
 
@@ -205,7 +305,7 @@ ydoy2date <- function(YYYYDOY){
     stop("Invalid day-of-the-year interval")
   }
   charDates <- sapply(1:length(YYYYDOY), .ydoy2dateHelper, year.vec = year.vec, doy.vec = doy.vec)
-  return (as.Date(charDates))
+  return(charDates)# return(as.Date(charDates))
 }
 .ydoy2dateHelper <- function(i, year.vec, doy.vec){
   year <- year.vec[i]
