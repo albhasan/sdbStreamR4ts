@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 # NOTES: 
 # - This script is meant to be call by main.R, hence it has the same workspace. 
-#   This can be used to load resoruces such as data and other scripts
+#   This can be used to load resources such as data and other scripts
 # - It must process one single time series of data
 # - It must implement the function analyzeTS
 #-------------------------------------------------------------------------------

@@ -1,12 +1,11 @@
-################################################################################
+#*******************************************************************************
 # ANALYZE A TIME SERIES USING BFAST MONITOR
 #-------------------------------------------------------------------------------
-# NOTES: 
+#---- NOTES: ----
 # - It requires the packages zoo, bfast, and lubridate. They must be installed 
 #   in each machine in the SciDB cluster. i.e. run:
 #   Rscript installPackages.R packages=zoo,bfast,lubridate
-#-------------------------------------------------------------------------------
-# DEBUG:
+#---- DEBUG: ----
 #   load("./data/ts.df-27271652")                 # Load a chunk of SciDB data (~40x40 time series)
 #   crids <- unique(ts.df[c("cid", "rid")])       # List unique column-row of the time-series
 #   crid <- crids[sample(1:nrow(crids), 1), ]     # Select a single time series
@@ -14,7 +13,7 @@
 #   source("bfastMonitor.R")
 #   plot(y = ts.df$evi, x = ts.df$tid, type = "l")
 #   analyzeTS(ts.df)
-################################################################################
+#*******************************************************************************
 
 # Analyze a time-series using the BFAST MONITOR method
 #
@@ -50,7 +49,7 @@ analyzeTS <- function(ts.df){
   }
   #---- fill in the time holes ----
   if(sum(is.na(ts.df[veg_index])) > 0){
-    vi.zoo <- zoo::na.locf(zoo::zoo(as.matrix(ts.df[-1]), order.by = ts.df$tid))
+    vi.zoo <- zoo::na.locf(zoo::zoo(as.matrix(ts.df[veg_index]), order.by = ts.df$tid))
     ts.df <- data.frame(tid = zoo::index(vi.zoo), zoo::coredata(vi.zoo))
   }
   #---- compute BFAST ----
