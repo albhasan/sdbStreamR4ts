@@ -10,6 +10,20 @@
 #   source("kalmanFilter.R")
 #   plot(y = ts.df$evi, x = ts.df$tid, type = "l")
 #   analyzeTS(ts.df)
+
+
+#---- DEBUG: ----
+#   source("bfastMonitor.R")
+#   load("./data/ts.df-27271652")                 # Load a chunk of SciDB data (~40x40 time series)
+#   crids <- unique(ts.df[c("cid", "rid")])       # List unique column-row of the time-series
+# Random time series
+#   crid <- crids[sample(1:nrow(crids), 1), ]     # Select a single time series
+#   ts.df <- ts.df[ts.df$cid == crid$cid & ts.df$rid == crid$rid, ]
+#   plot(y = ts.df$evi, x = ts.df$tid, type = "l")
+#   analyzeTS(ts.df)
+# All time series in the chunk
+#   res <- parallel::mclapply(1:nrow(crids), mc.cores = parallel::detectCores(), FUN = function(x, crids, input.df){ts.df <- subset(input.df, cid == crids[x,]$cid & rid == crids[x,]$rid); return(analyzeTS(ts.df))}, crids  = crids, input.df = ts.df)
+#   (res.df <- do.call(rbind, res))
 #*******************************************************************************
 
 # Analyze a time-series using the KALMAN FILTER
