@@ -37,3 +37,4 @@ vignettes/*.pdf
 *.R~
 *.sh~
 .gitignore~
+.Rproj.user

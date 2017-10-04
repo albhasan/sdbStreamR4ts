@@ -6,13 +6,17 @@
 #   in each machine in the SciDB cluster. i.e. run:
 #   Rscript installPackages.R packages=zoo,bfast,lubridate
 #---- DEBUG: ----
+#   source("bfastMonitor.R")
 #   load("./data/ts.df-27271652")                 # Load a chunk of SciDB data (~40x40 time series)
 #   crids <- unique(ts.df[c("cid", "rid")])       # List unique column-row of the time-series
+# Random time series
 #   crid <- crids[sample(1:nrow(crids), 1), ]     # Select a single time series
 #   ts.df <- ts.df[ts.df$cid == crid$cid & ts.df$rid == crid$rid, ]
-#   source("bfastMonitor.R")
 #   plot(y = ts.df$evi, x = ts.df$tid, type = "l")
 #   analyzeTS(ts.df)
+# All time series in the chunk
+#   res <- parallel::mclapply(1:nrow(crids), mc.cores = parallel::detectCores(), FUN = function(x, crids, input.df){ts.df <- subset(input.df, cid == crids[x,]$cid & rid == crids[x,]$rid); return(analyzeTS(ts.df))}, crids  = crids, input.df = ts.df)
+#   (res.df <- do.call(rbind, res))
 #*******************************************************************************
 
 # Analyze a time-series using the BFAST MONITOR method
@@ -62,7 +66,27 @@ analyzeTS <- function(ts.df){
                 )
               )
   )
-  bf <-  bfast::bfastmonitor(vi.ts, start = time(vi.ts)[as.integer(365.25/period * stable_years)], history = "all")  
+  
+  #---- Manicore experiment ----
+  # Parameters used by Msc Thesis "Automating Near Real-Time Deforestation 
+  # Monitoring With Satellite Image Time  Series" by Christopher Stephan.
+  # The start time of the monitoring end of July 2010, which corresponds to 
+  # twelfth MODIS EVI image of year 2010 and thus is the closest date before the 
+  # beginning of PRODES year 2011.
+  # Parameter_name  Parameter_value     Description
+  # start           c(2010, 12)         The starting time in period-cycle notation set to July 2010.
+  # formula         response ∼ harmon   The formula for the regression model omitting the trend.
+  # history         c(2006, 1)          The starting time of the stable history period set to January 2006.
+  # type            MOSUM               type of the monitoring process.
+  #
+  #bf <-  bfast::bfastmonitor(data = vi.ts, start = c(2010, 12), 
+  #                           formula = response ~ harmon, history = c(2006, 1), 
+  #                           type = "OLS-MOSUM")
+  
+  #---- Default parameters
+  bf <-  bfast::bfastmonitor(data = vi.ts, 
+                             start = time(vi.ts)[as.integer(365.25/period * stable_years)], 
+                             history = "all")  
   if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint)){
     res$breakpoint <- bf$breakpoint
     res$breakpointStr <- format(lubridate::date_decimal(bf$breakpoint), format = "%Y-%m-%d")
