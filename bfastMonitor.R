@@ -22,7 +22,7 @@
 # Analyze a time-series using the BFAST MONITOR method
 #
 # @param ts.df      A data.frame made of MOD13Q1 data. Each row is a pixel. The expected columnas are the pixel's column id, row_di, time_id, vegetation index, quality measure, and realibility measure named as folllows c("cid", "rid", "tid", "evi", "quality", "reliability")
-# @return           A data.frame of two columns. The break as double (breakpoint) and as a string (dpStr)
+# @return           A data.frame of two columns. The break as YYYYDOY date  and as a string
 analyzeTS <- function(ts.df){
   #---- setup ----
   res <- data.frame(cid = ts.df$cid[1], rid = ts.df$rid[1], breakpoint = 0, 
