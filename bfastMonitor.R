@@ -88,10 +88,10 @@ analyzeTS <- function(ts.df){
   #                           start = time(vi.ts)[as.integer(365.25/period * stable_years)], 
   #                           history = "all")  
   #---- Build response ----
-  if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint)){
+  if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint) && bf$breakpoint > 0){
     res$breakpoint <- bf$breakpoint
     res$breakpointStr <- format(lubridate::date_decimal(bf$breakpoint), format = "%Y-%m-%d")
-    #res$breakpoint <- scidbutil::date2ydoy(res$breakpointStr)
+    #res$breakpoint <- scidbutil::date2ydoy(res$breakpointStr) # TODO: this line thorws an error!!!
   }
   #---- return ----
   return(res)
