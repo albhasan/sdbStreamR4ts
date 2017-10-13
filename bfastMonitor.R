@@ -79,19 +79,19 @@ analyzeTS <- function(ts.df){
   # history         c(2006, 1)          The starting time of the stable history period set to January 2006.
   # type            MOSUM               type of the monitoring process.
   #
-  #bf <-  bfast::bfastmonitor(data = vi.ts, start = c(2010, 12), 
-  #                           formula = response ~ harmon, history = c(2006, 1), 
-  #                           type = "OLS-MOSUM")
+  bf <-  bfast::bfastmonitor(data = vi.ts, start = c(2010, 12), 
+                             formula = response ~ harmon, history = c(2006, 1), 
+                             type = "OLS-MOSUM")
   
   #---- Default BFAST M parameters ----
-  bf <-  bfast::bfastmonitor(data = vi.ts, 
-                             start = time(vi.ts)[as.integer(365.25/period * stable_years)], 
-                             history = "all")  
+  #bf <-  bfast::bfastmonitor(data = vi.ts, 
+  #                           start = time(vi.ts)[as.integer(365.25/period * stable_years)], 
+  #                           history = "all")  
   #---- Build response ----
   if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint)){
-    #res$breakpoint <- bf$breakpoint
+    res$breakpoint <- bf$breakpoint
     res$breakpointStr <- format(lubridate::date_decimal(bf$breakpoint), format = "%Y-%m-%d")
-    res$breakpoint <- scidbutil::date2ydoy(res$breakpointStr)
+    #res$breakpoint <- scidbutil::date2ydoy(res$breakpointStr)
   }
   #---- return ----
   return(res)
