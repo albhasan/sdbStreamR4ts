@@ -83,13 +83,15 @@ analyzeTS <- function(ts.df){
   #                           formula = response ~ harmon, history = c(2006, 1), 
   #                           type = "OLS-MOSUM")
   
-  #---- Default parameters
+  #---- Default BFAST M parameters ----
   bf <-  bfast::bfastmonitor(data = vi.ts, 
                              start = time(vi.ts)[as.integer(365.25/period * stable_years)], 
                              history = "all")  
+  #---- Build response ----
   if(!is.null(bf$breakpoint) && !is.na(bf$breakpoint) && is.numeric(bf$breakpoint)){
-    res$breakpoint <- bf$breakpoint
+    #res$breakpoint <- bf$breakpoint
     res$breakpointStr <- format(lubridate::date_decimal(bf$breakpoint), format = "%Y-%m-%d")
+    res$breakpoint <- scidbutil::date2ydoy(res$breakpointStr)
   }
   #---- return ----
   return(res)
