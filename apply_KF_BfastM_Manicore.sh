@@ -16,7 +16,7 @@
 #[2,]  57297  46860
 
 iquery -naq "remove(RESULT_KF)"     2> /dev/null 
-iquery -naq "remove(RESULT_BFCS)"   2> /dev/null 
+iquery -naq "remove(RESULT_BF)"   2> /dev/null 
 
 echo "Running KALMAN FILTER ..."
 time iquery -naq "store(redimension(stream(cast(project(apply(between(mod13q1_512, 57028, 46860, 0, 57297, 47091, 511), cid, col_id, rid, row_id, tid, time_id), cid, rid, tid, evi, quality, reliability), <cid:int32, rid:int32, tid:int32, evi:int32, quality:int32, reliability:int32> [col_id=0:172799:0:40; row_id=0:86399:0:40; time_id=0:511:0:512]), 'Rscript /home/scidb/shared/scripts/sdbStreamR4ts/main.R script_folder=/home/scidb/shared/scripts/sdbStreamR4ts script_name=kf4deforestation.R', 'format=df', 'types=int32,int32,double,string', 'names=col_id,row_id,breakpoint,breakpointStr'), <breakpoint:double, breakpointStr:string> [col_id=0:172799:0:40; row_id=0:86399:0:40]), RESULT_KF)"
