@@ -20,7 +20,7 @@
 # @param ts.df      A data.frame. Each row is an observation
 # @return           A data.frame with one row and N columns made of atomic values
 analyzeTS <- function(ts.df){
-  dmess <- paste("-------------\n analyzeTS() got a data frame of", nrow(ts.df), 
+  dmess <- paste(Sys.time(), " analyzeTS() got a data frame of", nrow(ts.df), 
                  "observations of the variables",  
                  paste(colnames(ts.df), collapse = ", "))
   write(dmess, stderr())                                                        # write the working directory to /home/scidb/data/0/0/scidb-stderr.log
